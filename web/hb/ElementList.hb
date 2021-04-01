@@ -1,0 +1,33 @@
+<div class="panel panel-default" id="ElementList">
+    <div class="panel-heading">
+        <h3 class="panel-title"><b>Your Feed</b></h3>
+    </div>
+    <div id="content">
+        {{#each mData}}
+        <div id={{this.mId}} class="ElementList-element">
+            <div class="ElementList-heading">
+                <a class="ElementList-userName" data-value="{{this.uid}}"><b>Username{{this.userName}}</b></a>
+                <a class="ElementList-menu-div" data-value="{{this.mId}}" href="#">
+                    <svg class="ElementList-dots-svg ElementList-svg"><use href="#dots-symbol"></use></svg>
+                </a>
+            </div>
+            <h1 class="ElementList-subject" data-value="{{this.mId}}"><b>{{this.mSubject}}</b></h1>
+            <h1 class="ElementList-message" data-value="{{this.mId}}">{{this.mMessage}}</h1>
+            <div class="ElementList-feedbackDiv">
+                <a class="ElementList-comment-div" data-value="{{this.mId}}" href="#">
+                    <svg class="ElementList-comment-svg ElementList-svg"><use href="#comment-symbol"></use></svg>
+                    <h1 class="ElementList-numComments" data-value="0">0</h4>
+                </a>
+                <a class="ElementList-upvote-div" data-value="{{this.mId}}" href="#">
+                    <svg class="ElementList-upvote-svg ElementList-svg"><use href="#upvote-symbol"></use></svg>
+                    <h1 class="ElementList-upvotes">{{this.mUpvotes}}</h4>
+                </a>
+                <a class="ElementList-downvote-div" data-value="{{this.mId}}" href="#">
+                    <svg class="ElementList-downvote-svg ElementList-svg"><use href="#downvote-symbol"></use></svg>
+                    <h1 class="ElementList-downvotes">{{this.mDownvotes}}</h4>
+                </a>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+</div>

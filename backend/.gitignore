@@ -1,0 +1,18 @@
+target/*
+dependency-reduced-pom.xml
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> origin/master
+src/main/java/edu/lehigh/cse216/masa20/backend/old/*
+<<<<<<< HEAD
+=======
+src/main/resources/*
+>>>>>>> origin/phase0
+<<<<<<< HEAD
+=======
+>>>>>>> master
+=======
+>>>>>>> remotes/origin/backend
+>>>>>>> origin/master
