@@ -2,3 +2,7 @@ node_modules
 package-lock.json
 web/local/*
 backend/src/main/resources/*
+.settings
+.project
+.classpath
+.factorypath
