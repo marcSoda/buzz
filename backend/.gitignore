@@ -2,7 +2,3 @@ target/*
 dependency-reduced-pom.xml
 src/main/java/edu/lehigh/cse216/masa20/backend/old/*
 src/main/resources/*
-.settings
-.project
-.classpath
-.factorypath
