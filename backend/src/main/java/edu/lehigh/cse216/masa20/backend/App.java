@@ -72,23 +72,23 @@ public class App {
         // environment variable is set, we will serve from it.  Otherwise, serve
         // from "/web"
         String static_location_override = System.getenv("STATIC_LOCATION");
-		if (static_location_override == null) {
-			Spark.staticFileLocation("/web");
+        if (static_location_override == null) {
+            Spark.staticFileLocation("/web");
         } else {
             Spark.staticFiles.externalLocation(static_location_override);
         }
-        
-		// Set up a route for serving the main page
+
+        // Set up a route for serving the main page
         Spark.get("/", (req, res) -> {
-			res.redirect("/index.html");
-			return "";
-		});
+                res.redirect("/index.html");
+                return "";
+            });
 
         Spark.get("/login", (request, response) -> {
-			System.out.println("LOGIN ROUTE HIT");
-			response.redirect("/login.html");
-			return "";
-		});
+                System.out.println("LOGIN ROUTE HIT");
+                response.redirect("/login.html");
+                return "";
+            });
 
         //use cors if ENABLE_CORS = TRUE within heroku (which it should)
         String cors_enabled = env.get("ENABLE_CORS");
@@ -101,75 +101,75 @@ public class App {
         }
 
         Spark.post("/auth", (request, response) -> {
-			SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-			response.type("application/json");
-			
-			String idTokenString = req.mId_token;
-			String clientId = env.get("CLIENT_ID");
+                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+                response.type("application/json");
 
-            GoogleIdToken idToken = null;
-			String uid = null;
-			String sessionKey = null;
+                String idTokenString = req.mId_token;
+                String clientId = env.get("CLIENT_ID");
 
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-			.setAudience(Collections.singletonList(clientId))
-			.build();
-			try {
-				idToken = verifier.verify(idTokenString);
-			} catch (java.security.GeneralSecurityException eSecurity) {
-				System.out.println("Token Verification Security Execption" + eSecurity);
-			} catch (java.io.IOException eIO) {
-				System.out.println("Token Verification IO Execption" + eIO);
-			}
-			if (idToken != null) {
-				Payload payload = idToken.getPayload();
-				// Get profile information from payload
-				uid = payload.getSubject();
-				String email = payload.getEmail();
-				boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
-				String name = (String) payload.get("name");
-				String familyName = (String) payload.get("family_name");
-				String givenName = (String) payload.get("given_name");
-				
-				boolean succ = db.insertUser(uid, email, givenName, familyName);
-				if (!succ) {
-					System.out.println("ins usr fail");
-				} else {
-					System.out.println("succ");
-				}
-				
-				Random r = new Random();
-				sessionKey = String.valueOf(r.nextInt(999999999));
+                GoogleIdToken idToken = null;
+                String uid = null;
+                String sessionKey = null;
 
-                sessionTable.put(uid, sessionKey);
+                GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                    .setAudience(Collections.singletonList(clientId))
+                    .build();
+                try {
+                    idToken = verifier.verify(idTokenString);
+                } catch (java.security.GeneralSecurityException eSecurity) {
+                    System.out.println("Token Verification Security Execption" + eSecurity);
+                } catch (java.io.IOException eIO) {
+                    System.out.println("Token Verification IO Execption" + eIO);
+                }
+                if (idToken != null) {
+                    Payload payload = idToken.getPayload();
+                    // Get profile information from payload
+                    uid = payload.getSubject();
+                    String email = payload.getEmail();
+                    boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                    String name = (String) payload.get("name");
+                    String familyName = (String) payload.get("family_name");
+                    String givenName = (String) payload.get("given_name");
 
-            } else {
-				System.out.println("Invalid ID token.");
-			}
+                    boolean succ = db.insertUser(uid, email, givenName, familyName);
+                    if (!succ) {
+                        System.out.println("ins usr fail");
+                    } else {
+                        System.out.println("succ");
+                    }
 
-            response.status(200);
-			return gson.toJson(new StructuredResponse("ok", null , new String[]{uid, sessionKey}));
-		});
+                    Random r = new Random();
+                    sessionKey = String.valueOf(r.nextInt(999999999));
+
+                    sessionTable.put(uid, sessionKey);
+
+                } else {
+                    System.out.println("Invalid ID token.");
+                }
+
+                response.status(200);
+                return gson.toJson(new StructuredResponse("ok", null , new String[]{uid, sessionKey}));
+            });
 
         // GET route that returns all message titles and Ids.  All we do is get
         // the data, embed it in a StructuredResponse, turn it into JSON, and
         // return it.  If there's no data, we return "[]", so there's no need
         // for error handling.
         Spark.get("/messages", (request, response) -> {
-            if (!ensureAuth(request, response)) {
-                response.redirect("/login");
-                System.out.println("REDIRECTING");
-                return "";
-            }
-            response.type("application/json");
-            ArrayList<Database.PostData> data = db.selectAllPosts();
-            if (data == null) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", "failed to get all messages", null));
-            } else {
-                return gson.toJson(new StructuredResponse("ok", null, data));
-            }
-        });
+                if (!ensureAuth(request, response)) {
+                    response.redirect("/login");
+                    System.out.println("REDIRECTING");
+                    return "";
+                }
+                response.type("application/json");
+                ArrayList<Database.PostData> data = db.selectAllPosts();
+                if (data == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "failed to get all messages", null));
+                } else {
+                    return gson.toJson(new StructuredResponse("ok", null, data));
+                }
+            });
 
         // GET route that returns everything for a single row in the db.
         // The ":id" suffix in the first parameter to get() becomes
@@ -177,110 +177,110 @@ public class App {
         // ":id" isn't a number, Spark will reply with a status 500 Internal
         // Server Error.  Otherwise, we have an integer, and the only possible
         Spark.get("/messages/:id", (request, response) -> {
-            int idx = Integer.parseInt(request.params("id"));
-            response.type("application/json");
-            Database.PostData data = db.selectOnePost(idx);
-            if (data == null) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", idx + " not found", null));
-            } else {
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", null, data));
-            }
-        });
+                int idx = Integer.parseInt(request.params("id"));
+                response.type("application/json");
+                Database.PostData data = db.selectOnePost(idx);
+                if (data == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", idx + " not found", null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, data));
+                }
+            });
 
         // POST route for adding a new element to the db.  This will read
         // JSON from the body of the request, turn it into a SimpleRequest
         // object, extract the title and message, insert them, and return the
         // ID of the newly created row.
         Spark.post("/messages", (request, response) -> {
-            // NB: if gson.Json fails, Spark will reply with status 500 Internal
-            // Server Error
-            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-            response.type("application/json");
-            int newId = db.insertPost(req.mUid, req.mTitle, req.mMessage);
+                // NB: if gson.Json fails, Spark will reply with status 500 Internal
+                // Server Error
+                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+                response.type("application/json");
+                int newId = db.insertPost(req.mUid, req.mTitle, req.mMessage);
 
-            if (newId == -1) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
-            } else {
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", "" + newId, null));
-            }
-        });
+                if (newId == -1) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", "" + newId, null));
+                }
+            });
 
         // POST route for incrementing upvote
         Spark.post("/messages/:id/upvote", (request, response) -> {
-            // NB: if gson.Json fails, Spark will reply with status 500 Internal
-            // Server Error
-            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-            response.type("application/json");
+                // NB: if gson.Json fails, Spark will reply with status 500 Internal
+                // Server Error
+                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+                response.type("application/json");
 
-            int idx = Integer.parseInt(request.params("id"));
-            boolean succ = db.upvote(idx);
+                int idx = Integer.parseInt(request.params("id"));
+                boolean succ = db.upvote(idx);
 
-            if (!succ) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", "upvote error", null));
-            } else {
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", null, null));
-            }
-        });
+                if (!succ) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "upvote error", null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, null));
+                }
+            });
 
         // POST route for incrementing downvote
         Spark.post("/messages/:id/downvote", (request, response) -> {
-            // NB: if gson.Json fails, Spark will reply with status 500 Internal
-            // Server Error
-            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-            response.type("application/json");
+                // NB: if gson.Json fails, Spark will reply with status 500 Internal
+                // Server Error
+                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+                response.type("application/json");
 
-            int idx = Integer.parseInt(request.params("id"));
-            boolean succ = db.downvote(idx);
-		
-		    if (!succ) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", "downvote error", null));
-            } else {
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", null, null));
-            }
-        });
+                int idx = Integer.parseInt(request.params("id"));
+                boolean succ = db.downvote(idx);
+
+                if (!succ) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "downvote error", null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, null));
+                }
+            });
 
         // PUT route for updating a row in the db. This is almost
         // exactly the same as POST
         Spark.put("/messages/:id", (request, response) -> {
-            // If we can't get an ID or can't parse the JSON, Spark will send
-            // a status 500
-            int idx = Integer.parseInt(request.params("id"));
-            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-            response.type("application/json");
-            Database.PostData result = db.updateOnePost(idx, req.mTitle, req.mMessage);
-            if (result == null) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
-            } else {
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", null, result));
-            }
-        });
+                // If we can't get an ID or can't parse the JSON, Spark will send
+                // a status 500
+                int idx = Integer.parseInt(request.params("id"));
+                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+                response.type("application/json");
+                Database.PostData result = db.updateOnePost(idx, req.mTitle, req.mMessage);
+                if (result == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, result));
+                }
+            });
 
         // DELETE route for removing a row from the db
         Spark.delete("/messages/:id", (request, response) -> {
-            // If we can't get an ID, Spark will send a status 500
-            int idx = Integer.parseInt(request.params("id"));
-            response.type("application/json");
-            // NB: we won't concern ourselves too much with the quality of the
-            //     message sent on a successful delete
-            boolean result = db.deleteOnePost(idx);
-            if (!result) {
-                response.status(500);
-                return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
-            } else {
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", null, null));
-            }
-        });
+                // If we can't get an ID, Spark will send a status 500
+                int idx = Integer.parseInt(request.params("id"));
+                response.type("application/json");
+                // NB: we won't concern ourselves too much with the quality of the
+                //     message sent on a successful delete
+                boolean result = db.deleteOnePost(idx);
+                if (!result) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, null));
+                }
+            });
     }
 
     /**
@@ -345,9 +345,9 @@ public class App {
         // get/post/put/delete.  In our case, it will put three extra CORS
         // headers into the response
         Spark.before((request, response) -> {
-            response.header("Access-Control-Allow-Origin", origin);
-            response.header("Access-Control-Request-Method", methods);
-            response.header("Access-Control-Allow-Headers", headers);
-        });
+                response.header("Access-Control-Allow-Origin", origin);
+                response.header("Access-Control-Request-Method", methods);
+                response.header("Access-Control-Allow-Headers", headers);
+            });
     }
 }
