@@ -13,6 +13,7 @@
     width: var(--content-width);
     margin: 0 auto;
     background-color: var(--bg1);
+    border: none !important;
 }
 
 #ElementList .panel-heading {

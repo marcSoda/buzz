@@ -15,7 +15,7 @@
 }
 
 * {
-    border: none !important;
+    /* border: none; */
     margin: 0;
 }
 
@@ -30,8 +30,8 @@ h1 {
 
 /* switch the default font for the body, and remove top/bottom/left/right margin */
 body {
-    ont-family: Helvetica, sans-serif;
-    background: var(--bg1) !important;
+    font-family: Helvetica, sans-serif;
+    background: var(--bg1);
 }
 
 /* /\* make the form elements wide, and force a line break after each *\/ */
