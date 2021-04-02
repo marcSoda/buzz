@@ -78,6 +78,12 @@ public class App {
             Spark.staticFiles.externalLocation(static_location_override);
         }
 
+        Spark.before((request, response) -> {
+            if (!ensureAuth(request, response)) {
+                response.status(401);
+            }
+        });
+
         // Set up a route for serving the main page
         Spark.get("/", (req, res) -> {
                 res.redirect("/index.html");
@@ -156,11 +162,6 @@ public class App {
         // return it.  If there's no data, we return "[]", so there's no need
         // for error handling.
         Spark.get("/messages", (request, response) -> {
-                if (!ensureAuth(request, response)) {
-                    response.redirect("/login");
-                    System.out.println("REDIRECTING");
-                    return "";
-                }
                 response.type("application/json");
                 ArrayList<Database.PostData> data = db.selectAllPosts();
                 if (data == null) {
@@ -301,18 +302,17 @@ public class App {
     }
 
     private static boolean ensureAuth(Request request, Response response) {
-        System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<MD");
-        System.out.println("uid " + request.headers("uid"));
-        System.out.println("key " + request.headers("sessionKey"));
         String uid = request.headers("uid");
         String sessionKey = request.headers("sessionKey");
         // System.out.println(sessionTable.get(uid));
         try {
+            // XXX: "null" - fix in JS
             if (uid == null || sessionKey == null || !sessionTable.get(uid).equals(sessionKey)) {
-                System.out.println("bad");
+                System.out.println(">>>Auth failed");
                 return false;
             }
         } catch (Exception e) {
+            System.out.println("Auth error: " + e.toString());
             return false;
         }
         return true;

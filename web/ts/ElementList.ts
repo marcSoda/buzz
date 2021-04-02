@@ -42,20 +42,21 @@ class ElementList {
     * refresh() is the public method for updating the ElementList
     */
     public static refresh() {
-	// Make sure the singleton is initialized
-	ElementList.init();
-	// Issue a GET, and then pass the result to update()
-	$.ajax({
-	    type: "GET",
+        // Make sure the singleton is initialized
+        ElementList.init();
+        // Issue a GET, and then pass the result to update()
+        $.ajax({
+            type: "GET",
             url: backendUrl + "/messages",
-	    headers: {
-		'custom_header': 'hello',
-		'uid': localStorage.getItem('uid'),
-		'sessionKey': localStorage.getItem('sessionKey')
-	    },
-	    dataType: "json",
-	    success: ElementList.update
-	});
+            headers: {
+                'custom_header': 'hello',
+                'uid': localStorage.getItem('uid'),
+                'sessionKey': localStorage.getItem('sessionKey')
+            },
+            dataType: "json",
+            success: ElementList.update,
+            error: function() { window.location = "/login"; },
+        });
     }
 
     //entry menu spawns
