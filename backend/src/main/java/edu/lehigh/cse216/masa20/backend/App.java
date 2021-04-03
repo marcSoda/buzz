@@ -141,15 +141,15 @@ public class App {
 		String familyName = (String) payload.get("family_name");
 		String givenName = (String) payload.get("given_name");
 
-		boolean temp = db.checkUserExists(uid);
-
-		boolean succ = db.insertUser(uid, email, givenName, familyName);
-
-		if (!succ) {
-		    System.out.println("ins usr fail");
-		} else {
-		    System.out.println("succ");
-		}
+		boolean isUserExists = db.checkUserExists(uid);
+                if (!isUserExists) {
+                    boolean succ = db.insertUser(uid, email, givenName, familyName);
+                    if (!succ) {
+                        System.out.println("ins usr fail");
+                    } else {
+                        System.out.println("succ");
+                    }
+                }
 
 		Random r = new Random();
 		sessionKey = String.valueOf(r.nextInt(999999999));

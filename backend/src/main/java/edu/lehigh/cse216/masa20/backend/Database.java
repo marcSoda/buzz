@@ -219,8 +219,8 @@ public class Database {
                                                                      "SELECT * FROM comments" +
                                                                      "WHERE postId = ?");
 	    db.mSelectOneUser = db.mConnection.prepareStatement(
-								"SELECT 1 from userData" +
-								"WHERE uid=?");
+								"SELECT * FROM userData " +
+								"WHERE uid = ?");
             db.mSelectOnePost = db.mConnection.prepareStatement(
                                                                 "SELECT * from postData" +
                                                                 "WHERE postId=?");
@@ -419,11 +419,12 @@ public class Database {
     }
 
     boolean checkUserExists(String uid) {
-	int res = -1;
 	try {
-	    mSelectOneUser.setString(1, uid);
-	    res = mSelectOneUser.executeUpdate();
-	    System.out.println(res);
+            mSelectOneUser.setString(1, uid);
+	    ResultSet rs = mSelectOneUser.executeQuery();
+            if (!rs.isBeforeFirst() ) {
+                return false;
+            }
 	    return true;
 	} catch (SQLException e) {
 	    e.printStackTrace();
