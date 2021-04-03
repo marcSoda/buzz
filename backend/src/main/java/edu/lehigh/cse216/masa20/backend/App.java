@@ -80,17 +80,14 @@ public class App {
 
         Spark.before((request, response) -> {
 	    String path = request.pathInfo();
-	    if (path != null
-		    && !path.startsWith("/login")
-		    && !path.equals("/auth")
-		    && !ensureAuth(request, response)) {
-		response.redirect("/login");
+	    if (path != null && !path.equals("/login") && !path.equals("/auth") && !isAuth(request)) {
+                response.redirect("/login");
 	    }
 	});
 
         // Set up a route for serving the main page
         Spark.get("/", (req, res) -> {
-	    res.redirect("/main.html");
+            res.redirect("/main.html");
 	    return "";
 	});
 
@@ -151,10 +148,9 @@ public class App {
                     }
                 }
 
-		Random r = new Random();
-		sessionKey = String.valueOf(r.nextInt(999999999));
-
-		sessionTable.put(uid, sessionKey);
+                // Auth is good
+		sessionTable.put(request.session().id(), uid);
+                request.session().attribute("uid", uid);
 
 	    } else {
 		System.out.println("Invalid ID token.");
@@ -308,21 +304,21 @@ public class App {
         return defaultVal;
     }
 
-    private static boolean ensureAuth(Request request, Response response) {
-        String uid = request.headers("uid");
-        String sessionKey = request.headers("sessionKey");
-        // System.out.println(sessionTable.get(uid));
+    private static boolean isAuth(Request request) {
+        String uid = request.session(true).attribute("uid");
+        String sessionKey = request.session().id();
+
         try {
-            // XXX: "null" - fix in JS
-            if (uid == null || sessionKey == null || !sessionTable.get(uid).equals(sessionKey)) {
-                System.out.println(">>>Auth failed");
+            if (uid != null && sessionKey != null && sessionTable.get(sessionKey).equals(uid)) {
+                return true;
+            } else {
+                System.out.println("Auth failed");
                 return false;
             }
         } catch (Exception e) {
             System.out.println("Auth error: " + e.toString());
-            return false;
         }
-        return true;
+        return false;
     }
 
     /**
