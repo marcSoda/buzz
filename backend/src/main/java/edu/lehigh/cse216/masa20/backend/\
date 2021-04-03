@@ -421,7 +421,7 @@ public class Database {
     boolean checkUserExists(String uid) {
 	int res = -1;
 	try {
-	    mSelectOneUser.setString(1, uid);
+	    mSelectOneUser.setStrin(1, uid);
 	    res = mSelectOneUser.executeUpdate();
 	    System.out.println(res);
 	    return true;

@@ -79,26 +79,26 @@ public class App {
         }
 
         Spark.before((request, response) -> {
-                String path = request.pathInfo();
-                if (path != null
-                      && !path.startsWith("/login")
-                      && !path.equals("/auth")
-                      && !ensureAuth(request, response)) {
-                    response.redirect("/login");
-                }
-            });
+	    String path = request.pathInfo();
+	    if (path != null
+		    && !path.startsWith("/login")
+		    && !path.equals("/auth")
+		    && !ensureAuth(request, response)) {
+		response.redirect("/login");
+	    }
+	});
 
         // Set up a route for serving the main page
         Spark.get("/", (req, res) -> {
-                res.redirect("/main.html");
-                return "";
-            });
+	    res.redirect("/main.html");
+	    return "";
+	});
 
         Spark.get("/login", (request, response) -> {
-                System.out.println("LOGIN ROUTE HIT");
-                response.redirect("/login.html");
-                return "";
-            });
+	    System.out.println("LOGIN ROUTE HIT");
+	    response.redirect("/login.html");
+	    return "";
+	});
 
         //use cors if ENABLE_CORS = TRUE within heroku (which it should)
         String cors_enabled = env.get("ENABLE_CORS");
@@ -111,55 +111,58 @@ public class App {
         }
 
         Spark.post("/auth", (request, response) -> {
-                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-                response.type("application/json");
+	    SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+	    response.type("application/json");
 
-                String idTokenString = req.mId_token;
-                String clientId = env.get("CLIENT_ID");
+	    String idTokenString = req.mId_token;
+	    String clientId = env.get("CLIENT_ID");
 
-                GoogleIdToken idToken = null;
-                String uid = null;
-                String sessionKey = null;
+	    GoogleIdToken idToken = null;
+	    String uid = null;
+	    String sessionKey = null;
 
-                GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-                    .setAudience(Collections.singletonList(clientId))
-                    .build();
-                try {
-                    idToken = verifier.verify(idTokenString);
-                } catch (java.security.GeneralSecurityException eSecurity) {
-                    System.out.println("Token Verification Security Execption" + eSecurity);
-                } catch (java.io.IOException eIO) {
-                    System.out.println("Token Verification IO Execption" + eIO);
-                }
-                if (idToken != null) {
-                    Payload payload = idToken.getPayload();
-                    // Get profile information from payload
-                    uid = payload.getSubject();
-                    String email = payload.getEmail();
-                    boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
-                    String name = (String) payload.get("name");
-                    String familyName = (String) payload.get("family_name");
-                    String givenName = (String) payload.get("given_name");
+	    GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+		.setAudience(Collections.singletonList(clientId))
+		.build();
+	    try {
+		idToken = verifier.verify(idTokenString);
+	    } catch (java.security.GeneralSecurityException eSecurity) {
+		System.out.println("Token Verification Security Execption" + eSecurity);
+	    } catch (java.io.IOException eIO) {
+		System.out.println("Token Verification IO Execption" + eIO);
+	    }
+	    if (idToken != null) {
+		Payload payload = idToken.getPayload();
+		// Get profile information from payload
+		uid = payload.getSubject();
+		String email = payload.getEmail();
+		boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+		String name = (String) payload.get("name");
+		String familyName = (String) payload.get("family_name");
+		String givenName = (String) payload.get("given_name");
 
-                    boolean succ = db.insertUser(uid, email, givenName, familyName);
-                    if (!succ) {
-                        System.out.println("ins usr fail");
-                    } else {
-                        System.out.println("succ");
-                    }
+		boolean temp = db.checkUserExists(uid);
 
-                    Random r = new Random();
-                    sessionKey = String.valueOf(r.nextInt(999999999));
+		boolean succ = db.insertUser(uid, email, givenName, familyName);
 
-                    sessionTable.put(uid, sessionKey);
+		if (!succ) {
+		    System.out.println("ins usr fail");
+		} else {
+		    System.out.println("succ");
+		}
 
-                } else {
-                    System.out.println("Invalid ID token.");
-                }
+		Random r = new Random();
+		sessionKey = String.valueOf(r.nextInt(999999999));
 
-                response.status(200);
-                return gson.toJson(new StructuredResponse("ok", null , new String[]{uid, sessionKey}));
-            });
+		sessionTable.put(uid, sessionKey);
+
+	    } else {
+		System.out.println("Invalid ID token.");
+	    }
+
+	    response.status(200);
+	    return gson.toJson(new StructuredResponse("ok", null , new String[]{uid, sessionKey}));
+	});
 
         // GET route that returns all message titles and Ids.  All we do is get
         // the data, embed it in a StructuredResponse, turn it into JSON, and
