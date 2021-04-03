@@ -12,10 +12,10 @@ class EntryMenu {
     private static init() {
 	//close entry menu if a click event happens outside the menu or the menu icon
 	$(document).click(function() {
-	    var container1 = $("#EntryMenu");
-	    var container2 = $('.ElementList-menu-div');
-	    if (!container1.is(event.target) && !container1.has(event.target).length) {
-		if (!container2.is(event.target) && !container2.has(event.target).length) {
+	    var entryMenu = $("#EntryMenu");
+	    var menuDivs = $('.ElementList-menu-div');
+	    if (!entryMeny.is(event.target) && !entryMeny.has(event.target).length) {
+		if (!menuDivs.is(event.target) && !menuDivs.has(event.target).length) {
 		    EntryMenu.close();
 		}
 	    }
