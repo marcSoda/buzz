@@ -17,7 +17,7 @@ mkdir $TARGETFOLDER
 mkdir $TARGETFOLDER/$WEBFOLDERNAME
 
 # there are many more steps to be done.  For now, we will just copy an HTML file
-cp index.html login.html $TARGETFOLDER/$WEBFOLDERNAME
+cp main.html login.html $TARGETFOLDER/$WEBFOLDERNAME
 
 # step 2: update our npm dependencies
 npm update

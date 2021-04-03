@@ -79,14 +79,18 @@ public class App {
         }
 
         Spark.before((request, response) -> {
-            if (!ensureAuth(request, response)) {
-                response.status(401);
-            }
-        });
+                String path = request.pathInfo();
+                if (path != null
+                      && !path.startsWith("/login")
+                      && !path.equals("/auth")
+                      && !ensureAuth(request, response)) {
+                    response.redirect("/login");
+                }
+            });
 
         // Set up a route for serving the main page
         Spark.get("/", (req, res) -> {
-                res.redirect("/index.html");
+                res.redirect("/main.html");
                 return "";
             });
 

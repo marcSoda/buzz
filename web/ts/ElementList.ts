@@ -55,7 +55,7 @@ class ElementList {
             },
             dataType: "json",
             success: ElementList.update,
-            error: function() { window.location = "/login"; },
+            //error: function() { window.location = "/login"; },
         });
     }
 

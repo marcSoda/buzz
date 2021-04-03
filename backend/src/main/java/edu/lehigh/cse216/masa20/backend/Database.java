@@ -167,7 +167,7 @@ public class Database {
             db.mCreateUserTable = db.mConnection.prepareStatement(
                                                                   "CREATE TABLE userData (" +
                                                                   "uid VARCHAR(50) PRIMARY KEY," +
-                                                                  "email VARCHAR(20) NOT NULL," +
+                                                                  "email VARCHAR(50) NOT NULL," +
                                                                   "firstName VARCHAR(50)," +
                                                                   "lastName VARCHAR(50) NOT NULL," +
                                                                   "description VARCHAR(500))");
