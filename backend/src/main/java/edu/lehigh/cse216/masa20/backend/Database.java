@@ -33,6 +33,7 @@ public class Database {
     private PreparedStatement mSelectPostComments;
     private PreparedStatement mInsertComment;
     private PreparedStatement mUpdateComment;
+    private PreparedStatement mDeleteComment;
 
     private PreparedStatement mCreatePostTable;
     private PreparedStatement mDropPostTable;
@@ -257,6 +258,9 @@ public class Database {
                                                                 "SET comment = ? " +
                                                                 "WHERE commentId = ?",
                                                                 PreparedStatement.RETURN_GENERATED_KEYS);
+            db.mDeleteComment = db.mConnection.prepareStatement(
+                                                                "DELETE FROM comments " +
+                                                                "WHERE commentId = ?");
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -509,6 +513,7 @@ public class Database {
     // Update comment
     CommentData updateComment(int commentId, String comment) {
         CommentData row = null;
+
         try {
             mUpdateComment.setString(1, comment);
             mUpdateComment.setInt(2, commentId);
@@ -523,7 +528,24 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return row;
+    }
+
+    // Delete a comment
+    boolean deleteComment(int commentId) {
+        int res = 0;
+
+        try {
+            mDeleteComment.setInt(1, commentId);
+            res = mDeleteComment.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // res is the number of altered rows. return false if the row was no deleted
+        if (res > 0) return true;
+        return false;
     }
 
     //Increment upvote for a post.

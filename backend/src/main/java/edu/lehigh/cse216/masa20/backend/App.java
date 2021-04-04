@@ -317,7 +317,7 @@ public class App {
             });
 
         // PUT for updating comment `:cid` on message `:id`
-        // NB: `:id` is not used
+        // `:id` is not used
         Spark.put("/messages/:id/comments/:cid", (request, response) -> {
                 response.type("application/json");
 
@@ -330,6 +330,23 @@ public class App {
                 } else {
                     response.status(200);
                     return gson.toJson(new StructuredResponse("ok", null, result));
+                }
+            });
+
+        // DELETE comment `:cid` on message `:id`
+        // `:id` is not used
+        Spark.delete("/messages/:id/comments/:cid", (request, response) -> {
+                response.type("application/json");
+
+                int commentId = Integer.parseInt(request.params("cid"));
+                boolean isSuccess = db.deleteComment(commentId);
+
+                if (!isSuccess) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "unable to delete comment " + commentId, null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, null));
                 }
             });
     }
