@@ -294,7 +294,7 @@ public class App {
                 ArrayList<Database.CommentData> data = db.selectPostComments(postId);
                 if (data == null) {
                     response.status(500);
-                    return gson.toJson(new StructuredResponse("error", "failed to get comments", null));
+                    return gson.toJson(new StructuredResponse("error", "failed to get comments for " + postId, null));
                 } else {
                     return gson.toJson(new StructuredResponse("ok", null, data));
                 }
@@ -313,6 +313,23 @@ public class App {
                 } else {
                     response.status(200);
                     return gson.toJson(new StructuredResponse("ok", "" + newId, null));
+                }
+            });
+
+        // PUT for updating comment `:cid` on message `:id`
+        // NB: `:id` is not used
+        Spark.put("/messages/:id/comments/:cid", (request, response) -> {
+                response.type("application/json");
+
+                int commentId = Integer.parseInt(request.params("cid"));
+                CommentRequest req = gson.fromJson(request.body(), CommentRequest.class);
+                Database.CommentData result = db.updateComment(commentId, req.mComment);
+                if (result == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "unable to update comment " + commentId, null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, result));
                 }
             });
     }
