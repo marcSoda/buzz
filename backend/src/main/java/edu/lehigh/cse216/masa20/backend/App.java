@@ -152,7 +152,6 @@ public class App {
                 // Auth is good
 		sessionTable.put(request.session().id(), uid);
                 request.session().attribute("uid", uid);
-
 	    } else {
 		System.out.println("Invalid ID token.");
 	    }
@@ -284,6 +283,23 @@ public class App {
                 } else {
                     response.status(200);
                     return gson.toJson(new StructuredResponse("ok", null, null));
+                }
+            });
+
+        // POST new comment for message `:id`
+        Spark.post("/messages/:id/comments", (request, response) -> {
+                int postId = Integer.parseInt(request.params("id"));
+                CommentRequest req = gson.fromJson(request.body(), CommentRequest.class);
+                int newId = db.insertComment(postId, req.mUid, req.mComment);
+
+                response.type("application/json");
+
+                if (newId == -1) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", "" + newId, null));
                 }
             });
     }
