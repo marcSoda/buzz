@@ -81,7 +81,7 @@ public class App {
         Spark.before((request, response) -> {
 	    String path = request.pathInfo();
 	    if (path != null && !path.equals("/login") && !path.equals("/auth") && !isAuth(request)) {
-                response.redirect("/login");
+                response.redirect("/login.html");
 	    }
 	});
 
@@ -91,6 +91,7 @@ public class App {
 	    return "";
 	});
 
+        // Not used
         Spark.get("/login", (request, response) -> {
 	    System.out.println("LOGIN ROUTE HIT");
 	    response.redirect("/login.html");
@@ -157,7 +158,7 @@ public class App {
 	    }
 
 	    response.status(200);
-	    return gson.toJson(new StructuredResponse("ok", null , new String[]{uid, sessionKey}));
+	    return gson.toJson(new StructuredResponse("OK", null , new String[]{uid, sessionKey}));
 	});
 
         // GET route that returns all message titles and Ids.  All we do is get

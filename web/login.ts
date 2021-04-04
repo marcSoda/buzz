@@ -1,5 +1,5 @@
 /// This constant indicates the path to our backend server
-const backendUrl = "https://runtime-tremor.herokuapp.com";
+const backendUrl = location.hostname === "localhost" ? "http://localhost:4567" : "https://runtime-tremor.herokuapp.com";
 
 function onSignIn(googleUser: any) {
     var profile = googleUser.getBasicProfile();
@@ -11,8 +11,7 @@ function onSignIn(googleUser: any) {
 	dataType: "json",
 	data: JSON.stringify({ mId_token: id_token }),
 	success: function(resp: any) {
-	    localStorage.setItem("uid", resp.mData[0]);
-	    localStorage.setItem("sessionKey", resp.mData[1]);
+            console.log("success");
 	    $(location).attr('href',"/");
 	},
 	error: function() {
