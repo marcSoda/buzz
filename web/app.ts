@@ -10,7 +10,7 @@
 let Handlebars: any;
 
 /// This constant indicates the path to our backend server
-const backendUrl = "https://runtime-tremor.herokuapp.com";
+const backendUrl = location.hostname === "localhost" ? "http://localhost:4567" : "https://runtime-tremor.herokuapp.com";
 
 // a global for the EditEntryForm of the program.  See newEntryForm for
 // explanation
