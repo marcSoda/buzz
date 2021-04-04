@@ -390,12 +390,6 @@ public class Database {
         return data;
     }
 
-    //Get all comments associated with a single post.
-    ArrayList<CommentData> selectPostComments(int postId) {
-        ArrayList<CommentData> data = new ArrayList<CommentData>();
-        return data;
-    }
-
     //Get all post data for one post.
     PostData selectOnePost(int postId) {
         PostData res = null;
@@ -467,13 +461,34 @@ public class Database {
         return row;
     }
 
-    // POST new comment
+    // Get all comments associated with a single post
+    ArrayList<CommentData> selectPostComments(int postId) {
+        ArrayList<CommentData> data = new ArrayList<CommentData>();
+
+        try {
+            mSelectPostComments.setInt(1, postId);
+            ResultSet rs = mSelectPostComments.executeQuery();
+            while (rs.next()) {
+                data.add(new CommentData(rs.getInt("commentId"),
+                                         rs.getInt("postId"),
+                                         rs.getString("uid"),
+                                         rs.getString("comment")));
+            }
+            rs.close();
+            return data;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Create new comment
     int insertComment(int postId, String uid, String comment) {
         int commentId = -1;
 
         try {
-            mInsertComment.setString(1, uid);
-            mInsertComment.setInt(2, postId);
+            mInsertComment.setInt(1, postId);
+            mInsertComment.setString(2, uid);
             mInsertComment.setString(3, comment);
             mInsertComment.executeUpdate();
 

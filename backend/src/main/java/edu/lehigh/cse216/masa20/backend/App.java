@@ -286,14 +286,27 @@ public class App {
                 }
             });
 
+        // GET all comments for message `:id`
+        Spark.get("/messages/:id/comments", (request, response) -> {
+                response.type("application/json");
+
+                int postId = Integer.parseInt(request.params("id"));
+                ArrayList<Database.CommentData> data = db.selectPostComments(postId);
+                if (data == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "failed to get comments", null));
+                } else {
+                    return gson.toJson(new StructuredResponse("ok", null, data));
+                }
+            });
+
         // POST new comment for message `:id`
         Spark.post("/messages/:id/comments", (request, response) -> {
+                response.type("application/json");
+
                 int postId = Integer.parseInt(request.params("id"));
                 CommentRequest req = gson.fromJson(request.body(), CommentRequest.class);
                 int newId = db.insertComment(postId, req.mUid, req.mComment);
-
-                response.type("application/json");
-
                 if (newId == -1) {
                     response.status(500);
                     return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
