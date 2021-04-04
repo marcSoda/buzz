@@ -369,6 +369,9 @@ public class App {
     }
 
     private static boolean isAuth(Request request) {
+        //String uid = "104229873894503499218";
+        //String sessionKey = "node0zvqx7adeqajbbt3h2bh8lwh30";
+        //return true;
         String uid = request.session(true).attribute("uid");
         String sessionKey = request.session().id();
 
