@@ -14,7 +14,7 @@ class EntryMenu {
 	$(document).click(function() {
 	    var entryMenu = $("#EntryMenu");
 	    var menuDivs = $('.ElementList-menu-div');
-	    if (!entryMeny.is(event.target) && !entryMeny.has(event.target).length) {
+	    if (!entryMenu.is(event.target) && !entryMenu.has(event.target).length) {
 		if (!menuDivs.is(event.target) && !menuDivs.has(event.target).length) {
 		    EntryMenu.close();
 		}
