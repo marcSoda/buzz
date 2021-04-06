@@ -60,13 +60,11 @@ public class App {
         // db.dropPostTable();
         // db.dropUserTable();
         // db.dropCommentTable();
-        // db.dropUpvoteTable();
-        // db.dropDownvoteTable();
+        // db.dropVoteTable();
         // db.createPostTable();
         // db.createUserTable();
         // db.createCommentTable();
-        // db.createUpvoteTable();
-        // db.createDownvoteTable();
+        // db.createVoteTable();
 
         // Set up the location for serving static files.  If the STATIC_LOCATION
         // environment variable is set, we will serve from it.  Otherwise, serve
@@ -139,7 +137,7 @@ public class App {
 		String familyName = (String) payload.get("family_name");
 		String givenName = (String) payload.get("given_name");
 
-		boolean isUserExists = db.checkUserExists(uid);
+		boolean isUserExists = db.isUserExists(uid);
                 if (!isUserExists) {
                     boolean succ = db.insertUser(uid, email, givenName, familyName);
                     if (!succ) {
@@ -213,43 +211,42 @@ public class App {
                 }
             });
 
-        // POST route for incrementing upvote
+        // POST route for altering upvote
         Spark.post("/messages/:id/upvote", (request, response) -> {
-                // NB: if gson.Json fails, Spark will reply with status 500 Internal
-                // Server Error
-                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
                 response.type("application/json");
 
-                int idx = Integer.parseInt(request.params("id"));
-                boolean succ = db.upvote(idx);
+                int postId = Integer.parseInt(request.params("id"));
+                String uid = request.session().attribute("uid");
 
-                if (!succ) {
+                int numVotes = db.vote(postId, uid, Database.VoteType.UPVOTE);
+
+                if (numVotes < 0) {
                     response.status(500);
-                    return gson.toJson(new StructuredResponse("error", "upvote error", null));
+                    return gson.toJson(new StructuredResponse("error", "upvote error on post " + postId, null));
                 } else {
                     response.status(200);
-                    return gson.toJson(new StructuredResponse("ok", null, null));
+                    return gson.toJson(new StructuredResponse("ok", null, numVotes));
                 }
             });
 
-        // POST route for incrementing downvote
+        // POST route for altering downvote
         Spark.post("/messages/:id/downvote", (request, response) -> {
-                // NB: if gson.Json fails, Spark will reply with status 500 Internal
-                // Server Error
-                SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
                 response.type("application/json");
 
-                int idx = Integer.parseInt(request.params("id"));
-                boolean succ = db.downvote(idx);
+                int postId = Integer.parseInt(request.params("id"));
+                String uid = request.session().attribute("uid");
 
-                if (!succ) {
+                int numVotes = db.vote(postId, uid, Database.VoteType.DOWNVOTE);
+
+                if (numVotes < 0) {
                     response.status(500);
-                    return gson.toJson(new StructuredResponse("error", "downvote error", null));
+                    return gson.toJson(new StructuredResponse("error", "downvote error on post " + postId, null));
                 } else {
                     response.status(200);
-                    return gson.toJson(new StructuredResponse("ok", null, null));
+                    return gson.toJson(new StructuredResponse("ok", null, numVotes));
                 }
             });
+
 
         // PUT route for updating a row in the db. This is almost
         // exactly the same as POST

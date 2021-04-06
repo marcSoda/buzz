@@ -19,15 +19,9 @@ public class Database {
     private PreparedStatement mSelectOnePost;
     private PreparedStatement mSelectOneUser;
     private PreparedStatement mDeleteOnePost;
-    private PreparedStatement mSelectUserUpvotes;
-    private PreparedStatement mSelectUserDownvotes;
 
     private PreparedStatement mInsertPost;
     private PreparedStatement mInsertUser;
-    private PreparedStatement mInsertUpvote;
-    private PreparedStatement mInsertDownvote;
-    private PreparedStatement mUpvotePost;
-    private PreparedStatement mDownvotePost;
     private PreparedStatement mUpdateOnePost;
 
     private PreparedStatement mSelectPostComments;
@@ -35,14 +29,21 @@ public class Database {
     private PreparedStatement mUpdateComment;
     private PreparedStatement mDeleteComment;
 
+    private PreparedStatement mSelectPostVotesForUid;
+    private PreparedStatement mSelectPostVotesCountForType;
+    private PreparedStatement mInsertVote;
+    private PreparedStatement mRemoveVote;
+    private PreparedStatement mIncPostUpvote;
+    private PreparedStatement mDecPostUpvote;
+    private PreparedStatement mIncPostDownvote;
+    private PreparedStatement mDecPostDownvote;
+
     private PreparedStatement mCreatePostTable;
     private PreparedStatement mDropPostTable;
     private PreparedStatement mCreateUserTable;
     private PreparedStatement mDropUserTable;
-    private PreparedStatement mCreateUpvoteTable;
-    private PreparedStatement mDropUpvoteTable;
-    private PreparedStatement mCreateDownvoteTable;
-    private PreparedStatement mDropDownvoteTable;
+    private PreparedStatement mCreateVoteTable;
+    private PreparedStatement mDropVoteTable;
     private PreparedStatement mCreateCommentTable;
     private PreparedStatement mDropCommentTable;
 
@@ -80,28 +81,6 @@ public class Database {
         }
     }
 
-    //Contains all fields for a single upvote.
-    public static class UpvoteData {
-        int mUid;
-        int mPostId;
-
-        public UpvoteData(int uid, int postId) {
-            mUid = uid;
-            mPostId = postId;
-        }
-    }
-
-    //Contains all fields for a single downvote.
-    public static class DownvoteData {
-        int mUid;
-        int mPostId;
-
-        public DownvoteData(int uid, int postId) {
-            mUid = uid;
-            mPostId = postId;
-        }
-    }
-
     //Contains all fields for a single comment.
     public static class CommentData {
         int mCommentId;
@@ -114,6 +93,35 @@ public class Database {
             mPostId = postId;
             mUid = uid;
             mComment = comment;
+        }
+    }
+
+    public enum VoteType {
+        UPVOTE(1), DOWNVOTE(2);
+
+        int value;
+
+        private VoteType(int value) {
+            this.value = value;
+        }
+
+        public static VoteType fromValue(int value) {
+            for (VoteType vt : VoteType.values()) {
+                if (vt.value == value) {
+                    return vt;
+                }
+            }
+            return null;
+        }
+    }
+
+    public class VoteQuery {
+        boolean isExists;
+        VoteType type;
+
+        public VoteQuery(boolean isExists, VoteType type) {
+            this.isExists = isExists;
+            this.type = type;
         }
     }
 
@@ -176,30 +184,24 @@ public class Database {
                                                                   "firstName VARCHAR(50)," +
                                                                   "lastName VARCHAR(50) NOT NULL," +
                                                                   "description VARCHAR(500))");
-            db.mCreateUpvoteTable = db.mConnection.prepareStatement(
-                                                                    "CREATE TABLE upvotes (" +
-                                                                    "uid VARCHAR(50)," +
-                                                                    "postId SERIAL," +
-                                                                    "PRIMARY KEY(uid, postId))");
-            db.mCreateDownvoteTable = db.mConnection.prepareStatement(
-                                                                      "CREATE TABLE downvotes (" +
-                                                                      "uid VARCHAR(50)," +
-                                                                      "postId SERIAL," +
-                                                                      "PRIMARY KEY(uid, postId))");
             db.mCreateCommentTable = db.mConnection.prepareStatement(
                                                                      "CREATE TABLE comments (" +
                                                                      "commentId SERIAL PRIMARY KEY," +
                                                                      "postId INTEGER," +
                                                                      "uid VARCHAR(50)," +
                                                                      "comment VARCHAR(200))");
+            db.mCreateVoteTable = db.mConnection.prepareStatement(
+                                                                    "CREATE TABLE votes (" +
+                                                                    "postId INTEGER, " +
+                                                                    "uid VARCHAR(50), " +
+                                                                    "type INTEGER, " +
+                                                                    "PRIMARY KEY(postId, uid))");
             db.mDropPostTable = db.mConnection.prepareStatement(
                                                                 "DROP TABLE postData");
             db.mDropUserTable = db.mConnection.prepareStatement(
                                                                 "DROP TABLE userData");
-            db.mDropUpvoteTable = db.mConnection.prepareStatement(
-                                                                  "DROP TABLE upvotes");
-            db.mDropDownvoteTable = db.mConnection.prepareStatement(
-                                                                    "DROP TABLE downvotes");
+            db.mDropVoteTable = db.mConnection.prepareStatement(
+                                                                  "DROP TABLE votes");
             db.mDropCommentTable = db.mConnection.prepareStatement(
                                                                    "DROP TABLE comments");
 
@@ -213,12 +215,6 @@ public class Database {
                                                                  "SELECT * FROM postData");
             db.mSelectAllUsers = db.mConnection.prepareStatement(
                                                                  "SELECT * FROM userData");
-            db.mSelectUserUpvotes = db.mConnection.prepareStatement(
-                                                                    "SELECT * FROM upvotes" +
-                                                                    "WHERE uid = ?");
-            db.mSelectUserDownvotes = db.mConnection.prepareStatement(
-                                                                      "SELECT * FROM downvotes" +
-                                                                      "WHERE uid = ?");
 	    db.mSelectOneUser = db.mConnection.prepareStatement(
 								"SELECT * FROM userData " +
 								"WHERE uid = ?");
@@ -229,23 +225,11 @@ public class Database {
                                                                 "UPDATE postData " +
                                                                 "SET subject = ?, message = ?" +
                                                                 "WHERE postId = ?", PreparedStatement.RETURN_GENERATED_KEYS);
-            db.mUpvotePost = db.mConnection.prepareStatement(
-                                                             "UPDATE postData " +
-                                                             "SET upvotes = upvotes + 1" +
-                                                             "WHERE postId = ?");
-            db.mDownvotePost = db.mConnection.prepareStatement(
-                                                               "UPDATE postData " +
-                                                               "SET downvotes = downvotes + 1" +
-                                                               "WHERE postId = ?");
             db.mInsertUser = db.mConnection.prepareStatement(
                                                              "INSERT INTO userData (uid, email, firstName, lastName)" +
                                                              "VALUES (?, ?, ?, ?)");
-            db.mInsertUpvote = db.mConnection.prepareStatement(
-                                                               "INSERT INTO upvotes" +
-                                                               "VALUES (?, ?)");
-            db.mInsertDownvote = db.mConnection.prepareStatement(
-                                                                 "INSERT INTO downvotes" +
-                                                                 "VALUES (?, ?)");
+
+            // Comments
             db.mSelectPostComments = db.mConnection.prepareStatement(
                                                                      "SELECT * FROM comments " +
                                                                      "WHERE postId = ?");
@@ -261,6 +245,40 @@ public class Database {
             db.mDeleteComment = db.mConnection.prepareStatement(
                                                                 "DELETE FROM comments " +
                                                                 "WHERE commentId = ?");
+
+            // Votes
+            db.mSelectPostVotesForUid = db.mConnection.prepareStatement(
+                                                                        "SELECT * FROM votes " +
+                                                                        "WHERE postId = ? " +
+                                                                        "AND uid = ?");
+            db.mSelectPostVotesCountForType = db.mConnection.prepareStatement(
+                                                                              "SELECT COUNT(*) FROM votes " +
+                                                                              "WHERE postId = ? " +
+                                                                              "AND type = ?");
+            db.mInsertVote = db.mConnection.prepareStatement(
+                                                             "INSERT INTO votes " +
+                                                             "VALUES (?, ?, ?)");
+            db.mRemoveVote = db.mConnection.prepareStatement(
+                                                             "DELETE FROM votes " +
+                                                             "WHERE postId = ? " +
+                                                             "AND uid = ?");
+            db.mIncPostUpvote = db.mConnection.prepareStatement(
+                                                                "UPDATE postData " +
+                                                                "SET upvotes = upvotes + 1 " +
+                                                                "WHERE postId = ?");
+            db.mDecPostUpvote = db.mConnection.prepareStatement(
+                                                                "UPDATE postData " +
+                                                                "SET upvotes = upvotes - 1 " +
+                                                                "WHERE postId = ?");
+            db.mIncPostDownvote = db.mConnection.prepareStatement(
+                                                                  "UPDATE postData " +
+                                                                  "SET downvotes = downvotes + 1 " +
+                                                                  "WHERE postId = ?");
+            db.mDecPostDownvote = db.mConnection.prepareStatement(
+                                                                  "UPDATE postData " +
+                                                                  "SET downvotes = downvotes - 1 " +
+                                                                  "WHERE postId = ?");
+
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -337,16 +355,6 @@ public class Database {
         return true;
     }
 
-    //Keeps track of who upvoted what post. Probably just return true or false.
-    boolean insertUpvote(String subject, Integer up, Integer down) {
-        return true;
-    }
-
-    //Keeps track of who downvoted what post. Probably just return true or false.
-    boolean insertDovote(String subject, Integer up, Integer down) {
-        return true;
-    }
-
     //Get all posts from db.
     ArrayList<PostData> selectAllPosts() {
         ArrayList<PostData> res = new ArrayList<PostData>();
@@ -387,18 +395,6 @@ public class Database {
         }
     }
 
-    //Get all upvotes for a certain user.
-    ArrayList<UpvoteData> selectUserUpvotes(int uid) {
-        ArrayList<UpvoteData> data = new ArrayList<UpvoteData>();
-        return data;
-    }
-
-    //Get all downvotes for a certain user.
-    ArrayList<DownvoteData> selectUserDownvotes(int uid) {
-        ArrayList<DownvoteData> data = new ArrayList<DownvoteData>();
-        return data;
-    }
-
     //Get all post data for one post.
     PostData selectOnePost(int postId) {
         PostData res = null;
@@ -419,11 +415,11 @@ public class Database {
         return res;
     }
 
-    boolean checkUserExists(String uid) {
+    boolean isUserExists(String uid) {
 	try {
             mSelectOneUser.setString(1, uid);
 	    ResultSet rs = mSelectOneUser.executeQuery();
-            if (!rs.isBeforeFirst() ) {
+            if (!rs.isBeforeFirst()) {
                 return false;
             }
 	    return true;
@@ -548,23 +544,103 @@ public class Database {
         return false;
     }
 
-    //Increment upvote for a post.
-    boolean upvote(int postId) {
+    // Insert vote into table. Fails on dups.
+    void insertVote(int postId, String uid, VoteType type) {
         try {
-            mUpvotePost.setInt(1, postId);
-            mUpvotePost.executeUpdate();
+            mInsertVote.setInt(1, postId);
+            mInsertVote.setString(2, uid);
+            mInsertVote.setInt(3, type.value);
+            mInsertVote.executeUpdate();
+
+            if (type == VoteType.UPVOTE) {
+                mIncPostUpvote.setInt(1, postId);
+                mIncPostUpvote.executeUpdate();
+            } else if (type == VoteType.DOWNVOTE) {
+                mIncPostDownvote.setInt(1, postId);
+                mIncPostDownvote.executeUpdate();
+            }
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            if (!e.getMessage().contains("duplicate key value")) {
+                e.printStackTrace();
+            }
         }
-        return true;
     }
 
-    //Increment downvote for a post.
+    // Remove vote
+    void removeVote(int postId, String uid, VoteType type) {
+        try {
+            mRemoveVote.setInt(1, postId);
+            mRemoveVote.setString(2, uid);
+            mRemoveVote.executeUpdate();
+
+            if (type == VoteType.UPVOTE) {
+                mDecPostUpvote.setInt(1, postId);
+                mDecPostUpvote.executeUpdate();
+            } else if (type == VoteType.DOWNVOTE) {
+                mDecPostDownvote.setInt(1, postId);
+                mDecPostDownvote.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Increment upvote for a post
+    int vote(int postId, String uid, VoteType type) {
+        try {
+            int numVotes = voteCount(postId, type);
+            VoteQuery ve = checkForVote(postId, uid);
+
+            if (ve.isExists) {
+                removeVote(postId, uid, type);
+                numVotes--;
+                if (ve.type == type) {
+                    return numVotes;
+                }
+            }
+
+            insertVote(postId, uid, type);
+
+            return numVotes + 1;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    // Find vote count
+    int voteCount(int postId, VoteType type) throws SQLException {
+        mSelectPostVotesCountForType.setInt(1, postId);
+        mSelectPostVotesCountForType.setInt(2, type.value);
+
+        ResultSet rs = mSelectPostVotesCountForType.executeQuery();
+        if (rs.isBeforeFirst()) {
+            rs.next();
+            return rs.getInt(1);
+        }
+        return -1;
+    }
+
+    // Check that that vote for (postId, uid) exists.
+    VoteQuery checkForVote(int postId, String uid) throws SQLException {
+        mSelectPostVotesForUid.setInt(1, postId);
+        mSelectPostVotesForUid.setString(2, uid);
+
+        ResultSet rs = mSelectPostVotesForUid.executeQuery();
+        if (rs.isBeforeFirst()) {
+            rs.next();
+            VoteType type = VoteType.fromValue(rs.getInt("type"));
+            return new VoteQuery(true, type);
+        }
+
+        return new VoteQuery(false, null);
+    }
+
+    // Increment downvote for a post.
     boolean downvote(int postId) {
         try {
-            mDownvotePost.setInt(1, postId);
-            mDownvotePost.executeUpdate();
+            mIncPostDownvote.setInt(1, postId);
+            mIncPostDownvote.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -586,16 +662,9 @@ public class Database {
             e.printStackTrace();
         }
     }
-    void createUpvoteTable() {
+    void createVoteTable() {
         try {
-            mCreateUpvoteTable.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    void createDownvoteTable() {
-        try {
-            mCreateDownvoteTable.execute();
+            mCreateVoteTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -622,16 +691,9 @@ public class Database {
             e.printStackTrace();
         }
     }
-    void dropUpvoteTable() {
+    void dropVoteTable() {
         try {
-            mDropUpvoteTable.execute();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-    void dropDownvoteTable() {
-        try {
-            mDropDownvoteTable.execute();
+            mDropVoteTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }
