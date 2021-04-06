@@ -21,7 +21,6 @@ public class Database {
     private PreparedStatement mDeleteOnePost;
     private PreparedStatement mSelectUserUpvotes;
     private PreparedStatement mSelectUserDownvotes;
-    private PreparedStatement mSelectPostComments;
 
     private PreparedStatement mInsertPost;
     private PreparedStatement mInsertUser;
@@ -29,9 +28,12 @@ public class Database {
     private PreparedStatement mInsertDownvote;
     private PreparedStatement mUpvotePost;
     private PreparedStatement mDownvotePost;
-    private PreparedStatement mInsertComment;
-
     private PreparedStatement mUpdateOnePost;
+
+    private PreparedStatement mSelectPostComments;
+    private PreparedStatement mInsertComment;
+    private PreparedStatement mUpdateComment;
+    private PreparedStatement mDeleteComment;
 
     private PreparedStatement mCreatePostTable;
     private PreparedStatement mDropPostTable;
@@ -102,13 +104,15 @@ public class Database {
 
     //Contains all fields for a single comment.
     public static class CommentData {
-        int mUid;
+        int mCommentId;
         int mPostId;
+        String mUid;
         String mComment;
 
-        public CommentData(int uid, int postId, String comment) {
-            mUid = uid;
+        public CommentData(int commentId, int postId, String uid, String comment) {
+            mCommentId = commentId;
             mPostId = postId;
+            mUid = uid;
             mComment = comment;
         }
     }
@@ -184,10 +188,10 @@ public class Database {
                                                                       "PRIMARY KEY(uid, postId))");
             db.mCreateCommentTable = db.mConnection.prepareStatement(
                                                                      "CREATE TABLE comments (" +
+                                                                     "commentId SERIAL PRIMARY KEY," +
+                                                                     "postId INTEGER," +
                                                                      "uid VARCHAR(50)," +
-                                                                     "postId SERIAL," +
-                                                                     "comment VARCHAR(200)," +
-                                                                     "PRIMARY KEY(uid, postId))");
+                                                                     "comment VARCHAR(200))");
             db.mDropPostTable = db.mConnection.prepareStatement(
                                                                 "DROP TABLE postData");
             db.mDropUserTable = db.mConnection.prepareStatement(
@@ -200,10 +204,10 @@ public class Database {
                                                                    "DROP TABLE comments");
 
             db.mDeleteOnePost = db.mConnection.prepareStatement(
-                                                                "DELETE FROM postData" +
+                                                                "DELETE FROM postData " +
                                                                 "WHERE postId = ?");
             db.mInsertPost = db.mConnection.prepareStatement(
-                                                             "INSERT INTO postData" +
+                                                             "INSERT INTO postData " +
                                                              "VALUES (default, ?, ?, ?, NOW())", PreparedStatement.RETURN_GENERATED_KEYS); //RETURN_GENERATED_KEYS to be able to get the id in insertRow()
             db.mSelectAllPosts = db.mConnection.prepareStatement(
                                                                  "SELECT * FROM postData");
@@ -215,25 +219,22 @@ public class Database {
             db.mSelectUserDownvotes = db.mConnection.prepareStatement(
                                                                       "SELECT * FROM downvotes" +
                                                                       "WHERE uid = ?");
-            db.mSelectPostComments = db.mConnection.prepareStatement(
-                                                                     "SELECT * FROM comments" +
-                                                                     "WHERE postId = ?");
 	    db.mSelectOneUser = db.mConnection.prepareStatement(
 								"SELECT * FROM userData " +
 								"WHERE uid = ?");
             db.mSelectOnePost = db.mConnection.prepareStatement(
-                                                                "SELECT * from postData" +
+                                                                "SELECT * from postData " +
                                                                 "WHERE postId=?");
             db.mUpdateOnePost = db.mConnection.prepareStatement(
-                                                                "UPDATE postData" +
+                                                                "UPDATE postData " +
                                                                 "SET subject = ?, message = ?" +
                                                                 "WHERE postId = ?", PreparedStatement.RETURN_GENERATED_KEYS);
             db.mUpvotePost = db.mConnection.prepareStatement(
-                                                             "UPDATE postData" +
+                                                             "UPDATE postData " +
                                                              "SET upvotes = upvotes + 1" +
                                                              "WHERE postId = ?");
             db.mDownvotePost = db.mConnection.prepareStatement(
-                                                               "UPDATE postData" +
+                                                               "UPDATE postData " +
                                                                "SET downvotes = downvotes + 1" +
                                                                "WHERE postId = ?");
             db.mInsertUser = db.mConnection.prepareStatement(
@@ -245,10 +246,21 @@ public class Database {
             db.mInsertDownvote = db.mConnection.prepareStatement(
                                                                  "INSERT INTO downvotes" +
                                                                  "VALUES (?, ?)");
+            db.mSelectPostComments = db.mConnection.prepareStatement(
+                                                                     "SELECT * FROM comments " +
+                                                                     "WHERE postId = ?");
             db.mInsertComment = db.mConnection.prepareStatement(
-                                                                "INSERT INTO comments" +
-                                                                "VALUES (?, ?, ?)");
-
+                                                                "INSERT INTO comments " +
+                                                                "VALUES (default, ?, ?, ?)",
+                                                                PreparedStatement.RETURN_GENERATED_KEYS);
+            db.mUpdateComment = db.mConnection.prepareStatement(
+                                                                "UPDATE comments " +
+                                                                "SET comment = ? " +
+                                                                "WHERE commentId = ?",
+                                                                PreparedStatement.RETURN_GENERATED_KEYS);
+            db.mDeleteComment = db.mConnection.prepareStatement(
+                                                                "DELETE FROM comments " +
+                                                                "WHERE commentId = ?");
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -335,11 +347,6 @@ public class Database {
         return true;
     }
 
-    //Insert a comment into the db. Prob return true or false.
-    boolean insertComment(String email, String message) {
-        return true;
-    }
-
     //Get all posts from db.
     ArrayList<PostData> selectAllPosts() {
         ArrayList<PostData> res = new ArrayList<PostData>();
@@ -389,12 +396,6 @@ public class Database {
     //Get all downvotes for a certain user.
     ArrayList<DownvoteData> selectUserDownvotes(int uid) {
         ArrayList<DownvoteData> data = new ArrayList<DownvoteData>();
-        return data;
-    }
-
-    //Get all comments associated with a single post.
-    ArrayList<CommentData> selectPostComments(int postId) {
-        ArrayList<CommentData> data = new ArrayList<CommentData>();
         return data;
     }
 
@@ -467,6 +468,84 @@ public class Database {
             e.printStackTrace();
         }
         return row;
+    }
+
+    // Get all comments associated with a single post
+    ArrayList<CommentData> selectPostComments(int postId) {
+        ArrayList<CommentData> data = new ArrayList<CommentData>();
+
+        try {
+            mSelectPostComments.setInt(1, postId);
+            ResultSet rs = mSelectPostComments.executeQuery();
+            while (rs.next()) {
+                data.add(new CommentData(rs.getInt("commentId"),
+                                         rs.getInt("postId"),
+                                         rs.getString("uid"),
+                                         rs.getString("comment")));
+            }
+            rs.close();
+            return data;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Create new comment
+    int insertComment(int postId, String uid, String comment) {
+        int commentId = -1;
+
+        try {
+            mInsertComment.setInt(1, postId);
+            mInsertComment.setString(2, uid);
+            mInsertComment.setString(3, comment);
+            mInsertComment.executeUpdate();
+
+            ResultSet rs = mInsertComment.getGeneratedKeys();
+            if (rs.next()) commentId = rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return commentId;
+    }
+
+    // Update comment
+    CommentData updateComment(int commentId, String comment) {
+        CommentData row = null;
+
+        try {
+            mUpdateComment.setString(1, comment);
+            mUpdateComment.setInt(2, commentId);
+            mUpdateComment.executeUpdate();
+            ResultSet rs = mUpdateComment.getGeneratedKeys();
+            if (rs.next()) {
+                row = new CommentData(rs.getInt("commentId"),
+                                      rs.getInt("postId"),
+                                      rs.getString("uid"),
+                                      rs.getString("comment"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return row;
+    }
+
+    // Delete a comment
+    boolean deleteComment(int commentId) {
+        int res = 0;
+
+        try {
+            mDeleteComment.setInt(1, commentId);
+            res = mDeleteComment.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // res is the number of altered rows. return false if the row was no deleted
+        if (res > 0) return true;
+        return false;
     }
 
     //Increment upvote for a post.

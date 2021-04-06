@@ -152,7 +152,6 @@ public class App {
                 // Auth is good
 		sessionTable.put(request.session().id(), uid);
                 request.session().attribute("uid", uid);
-
 	    } else {
 		System.out.println("Invalid ID token.");
 	    }
@@ -286,6 +285,70 @@ public class App {
                     return gson.toJson(new StructuredResponse("ok", null, null));
                 }
             });
+
+        // GET all comments for message `:id`
+        Spark.get("/messages/:id/comments", (request, response) -> {
+                response.type("application/json");
+
+                int postId = Integer.parseInt(request.params("id"));
+                ArrayList<Database.CommentData> data = db.selectPostComments(postId);
+                if (data == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "failed to get comments for " + postId, null));
+                } else {
+                    return gson.toJson(new StructuredResponse("ok", null, data));
+                }
+            });
+
+        // POST new comment for message `:id`
+        Spark.post("/messages/:id/comments", (request, response) -> {
+                response.type("application/json");
+
+                int postId = Integer.parseInt(request.params("id"));
+                CommentRequest req = gson.fromJson(request.body(), CommentRequest.class);
+                int newId = db.insertComment(postId, req.mUid, req.mComment);
+                if (newId == -1) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", "" + newId, null));
+                }
+            });
+
+        // PUT for updating comment `:cid` on message `:id`
+        // `:id` is not used
+        Spark.put("/messages/:id/comments/:cid", (request, response) -> {
+                response.type("application/json");
+
+                int commentId = Integer.parseInt(request.params("cid"));
+                CommentRequest req = gson.fromJson(request.body(), CommentRequest.class);
+                Database.CommentData result = db.updateComment(commentId, req.mComment);
+                if (result == null) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "unable to update comment " + commentId, null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, result));
+                }
+            });
+
+        // DELETE comment `:cid` on message `:id`
+        // `:id` is not used
+        Spark.delete("/messages/:id/comments/:cid", (request, response) -> {
+                response.type("application/json");
+
+                int commentId = Integer.parseInt(request.params("cid"));
+                boolean isSuccess = db.deleteComment(commentId);
+
+                if (!isSuccess) {
+                    response.status(500);
+                    return gson.toJson(new StructuredResponse("error", "unable to delete comment " + commentId, null));
+                } else {
+                    response.status(200);
+                    return gson.toJson(new StructuredResponse("ok", null, null));
+                }
+            });
     }
 
     /**
@@ -306,6 +369,9 @@ public class App {
     }
 
     private static boolean isAuth(Request request) {
+        //String uid = "104229873894503499218";
+        //String sessionKey = "node0zvqx7adeqajbbt3h2bh8lwh30";
+        //return true;
         String uid = request.session(true).attribute("uid");
         String sessionKey = request.session().id();
 

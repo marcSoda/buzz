@@ -48,11 +48,6 @@ class ElementList {
         $.ajax({
             type: "GET",
             url: backendUrl + "/messages",
-            headers: {
-                'custom_header': 'hello',
-                'uid': localStorage.getItem('uid'),
-                'sessionKey': localStorage.getItem('sessionKey')
-            },
             dataType: "json",
             success: ElementList.update,
             //error: function() { window.location = "/login"; },
