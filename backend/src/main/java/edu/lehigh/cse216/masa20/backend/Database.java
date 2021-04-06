@@ -567,19 +567,11 @@ public class Database {
     }
 
     // Remove vote
-    void removeVote(int postId, String uid, VoteType type) {
+    void removeVote(int postId, String uid) {
         try {
             mRemoveVote.setInt(1, postId);
             mRemoveVote.setString(2, uid);
             mRemoveVote.executeUpdate();
-
-            if (type == VoteType.UPVOTE) {
-                mDecPostUpvote.setInt(1, postId);
-                mDecPostUpvote.executeUpdate();
-            } else if (type == VoteType.DOWNVOTE) {
-                mDecPostDownvote.setInt(1, postId);
-                mDecPostDownvote.executeUpdate();
-            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -592,10 +584,25 @@ public class Database {
             VoteQuery ve = checkForVote(postId, uid);
 
             if (ve.isExists) {
-                removeVote(postId, uid, type);
+                removeVote(postId, uid);
                 numVotes--;
+                // Only adjust the post table if the types match
                 if (ve.type == type) {
+                    if (type == VoteType.UPVOTE) {
+                        mDecPostUpvote.setInt(1, postId);
+                        mDecPostUpvote.executeUpdate();
+                    } else if (type == VoteType.DOWNVOTE) {
+                        mDecPostDownvote.setInt(1, postId);
+                        mDecPostDownvote.executeUpdate();
+                    }
                     return numVotes;
+                }
+                if (type == VoteType.UPVOTE) {
+                    mDecPostDownvote.setInt(1, postId);
+                    mDecPostDownvote.executeUpdate();
+                } else if (type == VoteType.DOWNVOTE) {
+                    mDecPostUpvote.setInt(1, postId);
+                    mDecPostUpvote.executeUpdate();
                 }
             }
 
